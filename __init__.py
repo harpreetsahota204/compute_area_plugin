@@ -96,7 +96,7 @@ class ComputeArea(foo.Operator):
             "field_name",
             values=field_dropdown.values(),
             label="Select the Field to compute the area",
-            require=True
+            require=True,
             view=field_dropdown,
             required=True
         )
