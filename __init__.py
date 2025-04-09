@@ -87,7 +87,7 @@ class ComputeArea(foo.Operator):
 
         field_dropdown = types.Dropdown(label="Which Field would you like compute area for?")
 
-        for relevant_fields in _get_relevant_fields(ctx):  # Add the available revisions
+        for relevant_fields in self._get_relevant_fields(ctx):  # Add the available revisions
             field_dropdown.add_choice(relevant_fields)
 
         inputs.enum(
