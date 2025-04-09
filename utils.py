@@ -135,45 +135,41 @@ def compute_polygon_area(points, image_width, image_height):
     # Apply Shoelace formula: A = 1/2 * |sum(x_i*y_i+1 - x_i+1*y_i)|
     return 0.5 * np.abs(np.sum(x * y_shift - x_shift * y))
 
-
 def compute_and_set_polygon_areas(dataset, field_name):
     """
     Compute and set relative and absolute surface areas for polygons in a FiftyOne dataset.
     
-    This function calculates both relative (normalized) and absolute (pixel) areas of polygons
-    for all samples in the dataset using the Shoelace formula. The areas are stored as new 
-    attributes in the polylines field.
-    
     Args:
         dataset: A FiftyOne dataset containing polyline annotations
         field_name: String specifying the field containing polylines 
-                   (e.g., "ground_truth_polylines")
-        
-    Returns:
-        None - The function modifies the dataset in place by adding two new attributes
-        to each polyline:
-            - relative_surface_area: Area normalized to [0,1]
-            - absolute_surface_area: Area in square pixels
     """
     for sample in dataset:
-        # Get the points - take the first list from the nested structure
-        # Assumes polylines field structure: sample.{field_name}.polylines[0].points[0]
-        points = np.array(getattr(sample, field_name).polylines[0].points[0])
-        
-        # Get image dimensions from metadata
-        width = sample.metadata.width
-        height = sample.metadata.height
-        
-        # Compute absolute area using the helper function
-        absolute_surface_area = compute_polygon_area(points, width, height)
-        
-        # Compute relative area by dividing by total image area
-        relative_surface_area = absolute_surface_area / (width * height)
-        
-        # Store both relative and absolute areas in the polyline object
-        polyline = getattr(sample, field_name).polylines[0]
-        polyline.relative_surface_area = relative_surface_area
-        polyline.absolute_surface_area = absolute_surface_area
+        polylines_field = getattr(sample, field_name)
+        if not polylines_field or not polylines_field.polylines:
+            # Skip samples with no polylines
+            continue
+            
+        # Process each polyline in the sample
+        for polyline in polylines_field.polylines:
+            if not polyline.points or not polyline.points[0]:
+                continue
+                
+            # Get the points
+            points = np.array(polyline.points[0])
+            
+            # Get image dimensions from metadata
+            width = sample.metadata.width
+            height = sample.metadata.height
+            
+            # Compute absolute area using the helper function
+            absolute_surface_area = compute_polygon_area(points, width, height)
+            
+            # Compute relative area by dividing by total image area
+            relative_surface_area = absolute_surface_area / (width * height)
+            
+            # Store both relative and absolute areas in the polyline object
+            polyline.relative_surface_area = relative_surface_area
+            polyline.absolute_surface_area = absolute_surface_area
         
         # Save the sample with updated attributes
         sample.save()

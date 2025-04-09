@@ -6,8 +6,6 @@ from fiftyone.operators import types
 
 from .utils import compute_areas
 
-
-
 def _handle_calling(
         uri, 
         sample_collection, 
@@ -41,25 +39,7 @@ class ComputeArea(foo.Operator):
 
             icon="/assets/area-1-svgrepo-com.svg",
             )
-    def _get_relevant_fields(self, ctx):
-        """
-        Utility to return a list of relevant fields from the dataset.
-        """
-        dataset = ctx.target_view()
-        schema = dataset.get_field_schema(flat=True)  # top-level fields
-
-        # Filter for fields containing detections, polylines, or segmentations
-        relevant_fields = [
-            name for name, field in schema.items()
-            if isinstance(field, (fo.Detection, 
-                                fo.Detections,
-                                fo.Polylines,
-                                fo.Polyline, 
-                                fo.Segmentation)
-                                )
-        ]
-
-        return relevant_fields
+    
     def resolve_input(self, ctx):
         """Implement this method to collect user inputs as parameters
         that are stored in `ctx.params`.
@@ -72,31 +52,29 @@ class ComputeArea(foo.Operator):
         area_type = types.RadioGroup()
         area_type.add_choice("bbox_area", label="Compute Bounding Box Area")
         area_type.add_choice("surface_area", label="Compute Surface Area of a Polygon")        
-        
-        computation_type = ctx.params.get("area_type")
-
-        if area_type == "surface_area":
-            inputs.bool(
-                "has_polylines",
-                default=False,
-                required=True,
-                label="Are your segmentation masks represented as a FiftyOne Polylines?",
-                description="If not, the operator will automatically convert the mask to Polylines and add it as a new Field to the Dataset.",
-                view=types.CheckboxView(),
-            )
-
-        field_dropdown = types.Dropdown(label="Which Field would you like compute area for?")
-
-        for relevant_fields in self._get_relevant_fields(ctx):  # Add the available revisions
-            field_dropdown.add_choice(relevant_fields)
 
         inputs.enum(
+            "computation_type",
+            values=area_type.values(),
+            view=area_type,
+            required=True,
+            description="Select the type of area to compute:",
+        )
+
+        inputs.bool(
+            "has_polylines",
+            default=False,
+            required=True,
+            label="Are your segmentation masks represented as a FiftyOne Polylines?",
+            description="If not, the operator will automatically convert the mask to Polylines and add it as a new Field to the Dataset.",
+            
+            )
+
+        inputs.str(
             "field_name",
-            values=field_dropdown.values(),
-            label="Select the Field to compute the area",
-            require=True,
-            view=field_dropdown,
-            required=True
+            label="Field name",
+            required=True,
+            description="Select a Field which contains either: Detections, Segmentations, or Polylines.",
         )
 
         inputs.bool(
@@ -134,7 +112,7 @@ class ComputeArea(foo.Operator):
         Returns:
             an optional dict of results values
         """
-        view = ctx.target_view()
+        view = ctx.dataset
         field_name = ctx.params.get("field_name")
         computation_type= ctx.params.get("computation_type")
         has_polylines = ctx.params.get("has_polylines")
@@ -152,6 +130,7 @@ class ComputeArea(foo.Operator):
     def __call__(
             self, 
             sample_collection, 
+            field_name,
             computation_type,
             has_polylines,
             delegate
@@ -159,6 +138,7 @@ class ComputeArea(foo.Operator):
         return _handle_calling(
             self.uri,
             sample_collection,
+            field_name,
             computation_type,
             has_polylines,
             delegate
