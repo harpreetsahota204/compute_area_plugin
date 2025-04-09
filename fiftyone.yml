@@ -6,4 +6,4 @@ fiftyone:
 url: "https://github.com/harpreetsahota204/compute_area_plugin"
 license: "Apache 2.0"
 operators:
-  - compute_area
+  - compute_areas
