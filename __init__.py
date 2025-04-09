@@ -11,7 +11,7 @@ def _get_relevant_fields(ctx):
     """
     Utility to return a list of relevant fields from the dataset.
     """
-    dataset = ctx.view._dataset  # or ctx.view.dataset
+    dataset = ctx.view.dataset  # or ctx.view.dataset
     schema = dataset.get_field_schema(flat=True)  # top-level fields
 
     # Filter for fields containing detections, polylines, or segmentations
@@ -70,7 +70,6 @@ class ComputeArea(foo.Operator):
         """
         inputs = types.Object()
 
-
         area_type = types.RadioGroup()
         area_type.add_choice("bbox_area", label="Compute Bounding Box Area")
         area_type.add_choice("surface_area", label="Compute Surface Area of a Polygon")        
@@ -87,7 +86,7 @@ class ComputeArea(foo.Operator):
                 view=types.CheckboxView(),
             )
 
-        field_dropdown = types.Dropdown(label="Which revision would you like to use?")
+        field_dropdown = types.Dropdown(label="Which Field would you like compute area for?")
 
         for relevant_fields in _get_relevant_fields(ctx):  # Add the available revisions
             field_dropdown.add_choice(relevant_fields)
