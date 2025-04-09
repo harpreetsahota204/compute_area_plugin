@@ -176,12 +176,7 @@ def compute_and_set_polygon_areas(dataset, field_name):
         # Save the sample with updated attributes
         sample.save()
 
-def compute_areas(dataset, 
-                  field_name, 
-                  compute_bbox=False, 
-                  compute_mask=False, 
-                  has_polylines=False
-                  ):
+def compute_areas(dataset, field_name, computation_type="bbox_area", has_polylines=False):
     """
     Compute areas for bounding boxes and/or segmentation data in a FiftyOne dataset.
     
@@ -194,19 +189,20 @@ def compute_areas(dataset,
     Args:
         dataset: A FiftyOne dataset containing detections
         field_name: String specifying the field containing detections (e.g., "ground_truth")
-        compute_bbox: Boolean indicating whether to compute bounding box areas
-        compute_mask: Boolean indicating whether to compute segmentation/polyline areas
+        computation_type: String specifying type of area to compute. Must be one of:
+            - "bbox_area": compute bounding box areas
+            - "surface_area": compute segmentation/polyline areas
         has_polylines: Boolean indicating if the segmentation data is already in polyline format.
-            Only relevant if compute_mask=True:
+            Only relevant if computation_type="surface_area":
             - If False: will convert masks from {field_name} to polylines first
             - If True: will compute areas directly from existing polylines in {field_name}
     
     Returns:
         None - The function modifies the dataset in place by adding new fields/attributes:
-        If compute_bbox=True:
+        If computation_type="bbox_area":
             - {field_name}.detections.relative_bbox_area
             - {field_name}.detections.absolute_bbox_area
-        If compute_mask=True:
+        If computation_type="surface_area":
             If has_polylines=False:
                 - Creates {field_name}_polylines from masks
                 - Adds relative_surface_area and absolute_surface_area to each polyline
@@ -214,22 +210,23 @@ def compute_areas(dataset,
                 - Adds relative_surface_area and absolute_surface_area to existing polylines
     
     Raises:
-        ValueError: If neither compute_bbox nor compute_mask is True
+        ValueError: If computation_type is not one of "bbox_area" or "surface_area"
     """
-    if not (compute_bbox or compute_mask):
+    valid_types = ["bbox_area", "surface_area"]
+    if computation_type not in valid_types:
         raise ValueError(
-            "Please specify at least one computation type: "
-            "set either compute_bbox=True or compute_mask=True"
+            f"Invalid computation_type '{computation_type}'. "
+            f"Must be one of: {', '.join(valid_types)}"
         )
 
-    # Compute bounding box areas if requested
-    if compute_bbox:
+    # Compute bounding box areas
+    if computation_type == "bbox_area":
         print(f"Computing bounding box areas for field '{field_name}'...")
         compute_and_set_bbox_areas(dataset, field_name)
         print("Bounding box area computation complete.")
 
-    # Compute mask/polyline areas if requested
-    if compute_mask:
+    # Compute surface areas
+    else:  # computation_type == "surface_area"
         if not has_polylines:
             # Convert masks to polylines first
             print(f"Converting segmentation masks from field '{field_name}' to polylines...")
