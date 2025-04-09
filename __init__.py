@@ -6,23 +6,42 @@ from fiftyone.operators import types
 
 from .utils import compute_areas
 
+
+def _get_relevant_fields(ctx):
+    """
+    Utility to return a list of relevant fields from the dataset.
+    """
+    dataset = ctx.view._dataset  # or ctx.view.dataset
+    schema = dataset.get_field_schema(flat=True)  # top-level fields
+
+    # Filter for fields containing detections, polylines, or segmentations
+    relevant_fields = [
+        name for name, field in schema.items()
+        if isinstance(field, (fo.Detection, 
+                              fo.Detections,
+                              fo.Polylines,
+                              fo.Polyline, 
+                              fo.Segmentation)
+                              )
+    ]
+
+    return relevant_fields
+
 def _handle_calling(
         uri, 
         sample_collection, 
         field_name,
-        compute_bbox,
-        compute_mask,
+        computation_type,
         has_polylines,        
-        delegate=False
+        delegate
         ):
     ctx = dict(dataset=sample_collection)
 
     params = dict(
         field_name,
-        compute_bbox,
-        compute_mask,
+        computation_type,
         has_polylines,
-        delegate=delegate
+        delegate
         )
     return foo.execute_operator(uri, ctx, params=params)
 
@@ -51,17 +70,36 @@ class ComputeArea(foo.Operator):
         """
         inputs = types.Object()
 
-        form_view = types.View(
-            label="",
-            description="",
-        )
 
+        area_type = types.RadioGroup()
+        area_type.add_choice("bbox_area", label="Compute Bounding Box Area")
+        area_type.add_choice("surface_area", label="Compute Surface Area of a Polygon")        
         
-        inputs.str(
-            "",            
-            required=True,
-            label="",
+        computation_type = ctx.params.get("area_type")
+
+        if area_type == "surface_area":
+            inputs.bool(
+                "has_polylines",
+                default=False,
+                required=True,
+                label="Are your segmentation masks represented as a FiftyOne Polylines?",
+                description="If not, the operator will automatically convert the mask to Polylines and add it as a new Field to the Dataset.",
+                view=types.CheckboxView(),
             )
+
+        field_dropdown = types.Dropdown(label="Which revision would you like to use?")
+
+        for relevant_fields in _get_relevant_fields(ctx):  # Add the available revisions
+            field_dropdown.add_choice(relevant_fields)
+
+        inputs.enum(
+            "field_name",
+            values=field_dropdown.values(),
+            label="Select the Field to compute the area",
+            require=True
+            view=field_dropdown,
+            required=True
+        )
 
         inputs.bool(
             "delegate",
@@ -100,16 +138,14 @@ class ComputeArea(foo.Operator):
         """
         view = ctx.target_view()
         field_name = ctx.params.get("field_name")
-        compute_bbox= ctx.params.get("compute_bbox")
-        compute_mask = ctx.params.get("compute_mask")
+        computation_type= ctx.params.get("computation_type")
         has_polylines = ctx.params.get("has_polylines")
         
         # write main function here
         compute_areas(
             dataset= view, 
             field_name=field_name, 
-            compute_bbox=compute_bbox,
-            compute_mask=compute_mask,
+            computation_type=computation_type,
             has_polylines=has_polylines
             )
 
@@ -118,20 +154,16 @@ class ComputeArea(foo.Operator):
     def __call__(
             self, 
             sample_collection, 
-            field_name,
-            compute_bbox,
-            compute_mask,
+            computation_type,
             has_polylines,
-            delegate=False
+            delegate
             ):
         return _handle_calling(
             self.uri,
             sample_collection,
-            field_name,
-            compute_bbox,
-            compute_mask,
+            computation_type,
             has_polylines,
-            delegate=delegate
+            delegate
             )
 
 def register(p):
