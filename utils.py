@@ -46,6 +46,8 @@ def compute_and_set_bbox_areas(dataset, field_name):
         abs_area
     ).save()
 
+    dataset.add_dynamic_sample_fields()
+
 
 #####################
 # surface areas# 
@@ -175,6 +177,7 @@ def compute_and_set_polygon_areas(dataset, field_name):
         
         # Save the sample with updated attributes
         sample.save()
+    dataset.add_dynamic_sample_fields()
 
 def compute_areas(dataset, field_name, computation_type="bbox_area", has_polylines=False):
     """

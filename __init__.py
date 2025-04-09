@@ -7,25 +7,6 @@ from fiftyone.operators import types
 from .utils import compute_areas
 
 
-def _get_relevant_fields(ctx):
-    """
-    Utility to return a list of relevant fields from the dataset.
-    """
-    dataset = ctx.view.dataset  # or ctx.view.dataset
-    schema = dataset.get_field_schema(flat=True)  # top-level fields
-
-    # Filter for fields containing detections, polylines, or segmentations
-    relevant_fields = [
-        name for name, field in schema.items()
-        if isinstance(field, (fo.Detection, 
-                              fo.Detections,
-                              fo.Polylines,
-                              fo.Polyline, 
-                              fo.Segmentation)
-                              )
-    ]
-
-    return relevant_fields
 
 def _handle_calling(
         uri, 
@@ -60,7 +41,25 @@ class ComputeArea(foo.Operator):
 
             icon="/assets/area-1-svgrepo-com.svg",
             )
+    def _get_relevant_fields(self, ctx):
+        """
+        Utility to return a list of relevant fields from the dataset.
+        """
+        dataset = ctx.target_view()
+        schema = dataset.get_field_schema(flat=True)  # top-level fields
 
+        # Filter for fields containing detections, polylines, or segmentations
+        relevant_fields = [
+            name for name, field in schema.items()
+            if isinstance(field, (fo.Detection, 
+                                fo.Detections,
+                                fo.Polylines,
+                                fo.Polyline, 
+                                fo.Segmentation)
+                                )
+        ]
+
+        return relevant_fields
     def resolve_input(self, ctx):
         """Implement this method to collect user inputs as parameters
         that are stored in `ctx.params`.
