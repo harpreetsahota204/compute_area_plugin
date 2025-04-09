@@ -4,17 +4,24 @@ from fiftyone.core.utils import add_sys_path
 import fiftyone.operators as foo
 from fiftyone.operators import types
 
+from .utils import compute_areas
 
 def _handle_calling(
         uri, 
         sample_collection, 
-        api_key,
+        field_name,
+        compute_bbox,
+        compute_mask,
+        has_polylines,        
         delegate=False
         ):
     ctx = dict(dataset=sample_collection)
 
     params = dict(
-        api_key=api_key,
+        field_name,
+        compute_bbox,
+        compute_mask,
+        has_polylines,
         delegate=delegate
         )
     return foo.execute_operator(uri, ctx, params=params)
@@ -24,15 +31,15 @@ class ComputeArea(foo.Operator):
     def config(self):
         return foo.OperatorConfig(
             # The operator's URI: f"{plugin_name}/{name}"
-            name="",  # required
+            name="compute_area",  # required
 
             # The display name of the operator
-            label="",  # required
+            label="Compute Areas",  # required
 
             # A description for the operator
-            description="",
+            description="Compute Bounding Box Area and Polygon Surface Area",
 
-            icon="",
+            icon="/assets/area-1-svgrepo-com.svg",
             )
 
     def resolve_input(self, ctx):
@@ -92,26 +99,38 @@ class ComputeArea(foo.Operator):
             an optional dict of results values
         """
         view = ctx.target_view()
-         = ctx.params.get("")
-        bbox_field = ctx.params.get("bbox_field")
-        output_field = ctx.params.get("output_field")
-        confidence_threshold = ctx.params.get("confidence_threshold")
+        field_name = ctx.params.get("field_name")
+        compute_bbox= ctx.params.get("compute_bbox")
+        compute_mask = ctx.params.get("compute_mask")
+        has_polylines = ctx.params.get("has_polylines")
         
         # write main function here
-        
+        compute_areas(
+            dataset= view, 
+            field_name=field_name, 
+            compute_bbox=compute_bbox,
+            compute_mask=compute_mask,
+            has_polylines=has_polylines
+            )
 
         ctx.ops.reload_dataset()
 
     def __call__(
             self, 
             sample_collection, 
-            api_key,
+            field_name,
+            compute_bbox,
+            compute_mask,
+            has_polylines,
             delegate=False
             ):
         return _handle_calling(
             self.uri,
             sample_collection,
-            api_key,
+            field_name,
+            compute_bbox,
+            compute_mask,
+            has_polylines,
             delegate=delegate
             )
 
