@@ -50,7 +50,7 @@ class ComputeArea(foo.Operator):
     def config(self):
         return foo.OperatorConfig(
             # The operator's URI: f"{plugin_name}/{name}"
-            name="compute_area",  # required
+            name="compute_areas",  # required
 
             # The display name of the operator
             label="Compute Areas",  # required
